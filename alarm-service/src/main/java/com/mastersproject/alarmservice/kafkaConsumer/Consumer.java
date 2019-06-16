@@ -12,7 +12,7 @@ public class Consumer {
 
         String bootstrapServer = "35.233.35.208:9092";
         String groupId = "test";
-        String topic = "test";
+        String topic = "sensor_data";
 
         // Latch for dealing with multiple threads
         CountDownLatch latch = new CountDownLatch(1);

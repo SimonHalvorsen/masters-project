@@ -1,5 +1,8 @@
 package com.mastersproject.alarmservice.kafkaConsumer;
 
+
+import com.google.gson.JsonParser;
+import org.json.JSONException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -19,7 +22,7 @@ public class ConsumerRunnable implements Runnable{
     private CountDownLatch latch;
     private KafkaConsumer<String, String> consumer;
     private Logger logger = LoggerFactory.getLogger(ConsumerRunnable.class.getName());
-
+    private static JsonParser jsonParser = new JsonParser();
 
     public ConsumerRunnable(String topic, String bootstrapServer, String groupId, CountDownLatch latch){
         this.latch = latch;
@@ -49,13 +52,25 @@ public class ConsumerRunnable implements Runnable{
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
 
                 for (ConsumerRecord<String, String> record : records) {
-                    logger.info("Key: " + record.key() + ", Value: " + record.value());
-                    logger.info("Partition: " + record.partition() + ", Offset: " + record.offset());
+                    String sensorValueString = record.value().substring(1, record.value().length()-1).replace("\\", "");
+                    float sensorValue = jsonParser.parse(sensorValueString)
+                            .getAsJsonObject()
+                            .get("new_value")
+                            .getAsFloat();
+
+                    if (sensorValue <= 0) {
+                        logger.info("TEST:  ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!");
+                    } else {
+                        logger.info("Key: " + record.key() + ", Value: " + record.value());
+                        logger.info("Partition: " + record.partition() + ", Offset: " + record.offset());
+
+                    }
                 }
             }
-        } catch (WakeupException e){
+        } catch (WakeupException e) {
             logger.info("Received shutdown signal!");
-        } finally {
+        }
+        finally {
             consumer.close();
             // Tell our main code that we are done with the consumer
             latch.countDown();

@@ -11,8 +11,8 @@ public class AlarmServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(AlarmServiceApplication.class, args);
-		Consumer c = new Consumer();
-		c.run();
+			Consumer consumer = new Consumer();
+			consumer.run();
 	}
 
 }
