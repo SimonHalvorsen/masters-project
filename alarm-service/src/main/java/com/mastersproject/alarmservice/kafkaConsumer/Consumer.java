@@ -11,7 +11,7 @@ public class Consumer {
         Logger logger = LoggerFactory.getLogger(Consumer.class.getName());
 
         String bootstrapServer = "35.233.35.208:9092";
-        String groupId = "test";
+        String groupId = "alarm_service";
         String topic = "sensor_data";
 
         // Latch for dealing with multiple threads

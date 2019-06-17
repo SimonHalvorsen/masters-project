@@ -2,6 +2,7 @@ package com.mastersproject.alarmservice.kafkaConsumer;
 
 
 import com.google.gson.JsonParser;
+import com.mastersproject.alarmservice.kafkaProducer.ProducerWithCallback;
 import org.json.JSONException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -23,6 +24,7 @@ public class ConsumerRunnable implements Runnable{
     private KafkaConsumer<String, String> consumer;
     private Logger logger = LoggerFactory.getLogger(ConsumerRunnable.class.getName());
     private static JsonParser jsonParser = new JsonParser();
+    private ProducerWithCallback producer = new ProducerWithCallback();
 
     public ConsumerRunnable(String topic, String bootstrapServer, String groupId, CountDownLatch latch){
         this.latch = latch;
@@ -59,7 +61,7 @@ public class ConsumerRunnable implements Runnable{
                             .getAsFloat();
 
                     if (sensorValue <= 0) {
-                        logger.info("TEST:  ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!ALARM!");
+                        producer.publishAlarm("alarms", record.value());
                     } else {
                         logger.info("Key: " + record.key() + ", Value: " + record.value());
                         logger.info("Partition: " + record.partition() + ", Offset: " + record.offset());
