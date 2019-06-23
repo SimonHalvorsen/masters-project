@@ -28,4 +28,5 @@ HELP.md
 ### VS Code ###
 .vscode/
 
-*.json
+server.txt
+Config.java

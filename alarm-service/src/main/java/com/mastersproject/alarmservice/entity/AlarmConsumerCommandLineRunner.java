@@ -2,6 +2,7 @@ package com.mastersproject.alarmservice.entity;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mastersproject.alarmservice.configs.Config;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -23,20 +24,21 @@ import java.util.Properties;
 @Component
 public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
 
-    Logger logger = LoggerFactory.getLogger(AlarmConsumerCommandLineRunner.class.getName());
 
     @Autowired
     AlarmRepository alarmRepository;
 
+    private Logger logger = LoggerFactory.getLogger(AlarmConsumerCommandLineRunner.class.getName());
     private JsonParser jsonParser = new JsonParser();
-    private String bootstrapServer = "34.77.67.20:9092";
     private String groupId = "alarm_service";
-    private String resetConfig = "earliest";
+    private String resetConfig = "latest";
     private String topic = "sensor_data";
+    private String bootstrapServer = new Config().getIp();
 
 
     @Override
     public void run(String... args) throws Exception {
+
         // create Producer properties
         Properties properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
@@ -59,6 +61,7 @@ public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
                     logger.info(record.toString());
                     String recordAsString = record.value()
                             .substring(1, record.value().length() - 1).replace("\\", "");
+//                    String recordAsString = record.value(); //test
                     JsonObject recordAsJsonObject = jsonParser.parse(recordAsString).getAsJsonObject();
 
                     long sensorValue = recordAsJsonObject.get("new_value").getAsLong();
@@ -68,10 +71,9 @@ public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
                         long facilityId = recordAsJsonObject.get("facility_id").getAsLong();
                         long sensorId = recordAsJsonObject.get("sensor_id").getAsLong();
 
-                        Alarm alarm = new Alarm();
-                        alarm.setFacilityId(facilityId);
-                        alarm.setSensorId(sensorId);
-                        logger.info(alarm.getFacilityId() + " LERJGNERJGNELRSDFJGNEROJGNFEORINVOIFDNVERJFVN " + alarm.getSensorId());
+                        Alarm alarm = new Alarm(facilityId, sensorId);
+
+                        logger.info("Alarm persisted");
 
                         alarmRepository.save(alarm);
                         logger.info("ALARM PERSISTED: " + recordAsString + "  DOFGHSIERUDFLGHLEARIODSHFVODUFVHASØDIFVHDF");

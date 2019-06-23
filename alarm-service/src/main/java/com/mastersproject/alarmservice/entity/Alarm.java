@@ -9,14 +9,6 @@ import javax.persistence.Id;
 @Entity
 public class Alarm {
 
-    public void setFacilityId(long facilityId) {
-        this.facilityId = facilityId;
-    }
-
-    public void setSensorId(long sensorId) {
-        this.sensorId = sensorId;
-    }
-
     @Id
     @GeneratedValue
     @Column(name="id")

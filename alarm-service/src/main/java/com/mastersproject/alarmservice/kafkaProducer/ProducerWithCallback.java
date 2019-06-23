@@ -19,8 +19,7 @@ public class ProducerWithCallback {
         public void publishAlarm(String topic, String value) {
 
             Properties properties = new Properties();
-            String bootstrapServer = "35.233.35.208:9092";
-            properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
+            properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "34.77.67.20:9092");
             properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
