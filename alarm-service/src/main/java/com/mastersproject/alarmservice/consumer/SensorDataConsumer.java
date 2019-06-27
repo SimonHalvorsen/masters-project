@@ -1,8 +1,12 @@
-package com.mastersproject.alarmservice.entity;
+package com.mastersproject.alarmservice.consumer;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mastersproject.alarmservice.configs.Config;
+import com.mastersproject.alarmservice.entity.Alarm;
+import com.mastersproject.alarmservice.entity.AlarmRepository;
+import com.mastersproject.alarmservice.kafkaProducer.AlarmProducerWithCallback;
+import kafka.admin.AdminUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -16,19 +20,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Properties;
 
 
 @Component
-public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
+public class SensorDataConsumer implements CommandLineRunner {
 
 
     @Autowired
     AlarmRepository alarmRepository;
+    @Autowired
+    AlarmProducerWithCallback producer;
 
-    private Logger logger = LoggerFactory.getLogger(AlarmConsumerCommandLineRunner.class.getName());
+    private Logger logger = LoggerFactory.getLogger(SensorDataConsumer.class.getName());
     private JsonParser jsonParser = new JsonParser();
     private String groupId = "alarm_service";
     private String resetConfig = "latest";
@@ -61,7 +69,6 @@ public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
                     logger.info(record.toString());
                     String recordAsString = record.value()
                             .substring(1, record.value().length() - 1).replace("\\", "");
-//                    String recordAsString = record.value(); //test
                     JsonObject recordAsJsonObject = jsonParser.parse(recordAsString).getAsJsonObject();
 
                     long sensorValue = recordAsJsonObject.get("new_value").getAsLong();
@@ -71,18 +78,21 @@ public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
                         long facilityId = recordAsJsonObject.get("facility_id").getAsLong();
                         long sensorId = recordAsJsonObject.get("sensor_id").getAsLong();
 
-                        Alarm alarm = new Alarm(facilityId, sensorId);
+                        Alarm dbLookup = alarmRepository.findBySensorId(sensorId);
 
-                        logger.info("Alarm persisted");
+                        if(dbLookup != null && !dbLookup.isActive()){
+                            logger.info(String.valueOf(dbLookup.isActive()));
+                            //update
+                            dbLookup.setActive(true);
+                            dbLookup.setTimestamp(getTimestamp());
+                            alarmRepository.save(dbLookup);
+                            logger.info("Status of sensor with id " + sensorId + " set to active");
+                        }
+                        else if(dbLookup == null) {
 
-                        alarmRepository.save(alarm);
-                        logger.info("ALARM PERSISTED: " + recordAsString + "  DOFGHSIERUDFLGHLEARIODSHFVODUFVHASØDIFVHDF");
-
-                        logger.info(alarmRepository.findBySensorId(sensorId).toString() + " was retrieved from the database");
-//                        producer.publishAlarm("alarms", record.value());
-                    } else {
-                        logger.info("Key: " + record.key() + ", Value: " + record.value());
-                        logger.info("Partition: " + record.partition() + ", Offset: " + record.offset());
+                            alarmRepository.save(new Alarm(facilityId, sensorId, true, getTimestamp()));
+                            logger.info("Alarm from sensor with id " + sensorId + " persisted");
+                        }
                     }
                 }
             }
@@ -91,5 +101,11 @@ public class AlarmConsumerCommandLineRunner implements CommandLineRunner {
         } finally {
             consumer.close();
         }
+    }
+
+    public String getTimestamp(){
+        Date date = new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        return formatter.format(date);
     }
 }
