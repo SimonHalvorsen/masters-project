@@ -23,16 +23,21 @@ public class Alarm {
     private boolean active;
 
     @Column(name = "timestamp")
-    private String timestamp;
+    private double timestamp;
+
+    @Column(name = "published")
+    private boolean published;
+
 
     public Alarm() {
     }
 
-    public Alarm(long facilityId, long sensorId, boolean active, String timestamp) {
+    public Alarm(long facilityId, long sensorId, boolean active, double timestamp, boolean published) {
         this.facilityId = facilityId;
         this.sensorId = sensorId;
         this.active = active;
         this.timestamp = timestamp;
+        this.published = published;
     }
 
     public long getId() {
@@ -55,12 +60,20 @@ public class Alarm {
         this.active = active;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(double timestamp) {
         this.timestamp = timestamp;
     }
 
-    public String getTimestamp() {
+    public double getTimestamp() {
         return timestamp;
+    }
+
+    public boolean isPublished() {
+        return published;
+    }
+
+    public void setPublished(boolean published) {
+        this.published = published;
     }
 
     @Override

@@ -6,7 +6,6 @@ import com.mastersproject.alarmservice.configs.Config;
 import com.mastersproject.alarmservice.entity.Alarm;
 import com.mastersproject.alarmservice.entity.AlarmRepository;
 import com.mastersproject.alarmservice.kafkaProducer.AlarmProducerWithCallback;
-import kafka.admin.AdminUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -20,10 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Properties;
 
 
@@ -47,7 +44,6 @@ public class SensorDataConsumer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        // create Producer properties
         Properties properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
@@ -56,13 +52,13 @@ public class SensorDataConsumer implements CommandLineRunner {
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, resetConfig);
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
 
-        // Subscribe consumer to our topic(s)
         // Arrays.asList(t1, t2, t3...); to sub to multiple topics
         consumer.subscribe(Collections.singleton(topic));
 
-        // Poll for new data
         try {
             while (true) {
+                producer.publishAlarm();
+
                 ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
 
                 for (ConsumerRecord<String, String> record : records) {
@@ -75,23 +71,20 @@ public class SensorDataConsumer implements CommandLineRunner {
 
                     if (sensorValue <= 0) {
 
-                        long facilityId = recordAsJsonObject.get("facility_id").getAsLong();
                         long sensorId = recordAsJsonObject.get("sensor_id").getAsLong();
 
                         Alarm dbLookup = alarmRepository.findBySensorId(sensorId);
 
                         if(dbLookup != null && !dbLookup.isActive()){
-                            logger.info(String.valueOf(dbLookup.isActive()));
-                            //update
                             dbLookup.setActive(true);
-                            dbLookup.setTimestamp(getTimestamp());
                             alarmRepository.save(dbLookup);
                             logger.info("Status of sensor with id " + sensorId + " set to active");
                         }
                         else if(dbLookup == null) {
-
-                            alarmRepository.save(new Alarm(facilityId, sensorId, true, getTimestamp()));
-                            logger.info("Alarm from sensor with id " + sensorId + " persisted");
+                            long facilityId = recordAsJsonObject.get("facility_id").getAsLong();
+                            double timestamp = recordAsJsonObject.get("timestamp").getAsDouble();
+                            alarmRepository.save(new Alarm(facilityId, sensorId, true, timestamp, false));
+                            logger.info("Alarm from sensor with id " + sensorId + " and timestamp " + timestamp + " persisted");
                         }
                     }
                 }
@@ -101,11 +94,5 @@ public class SensorDataConsumer implements CommandLineRunner {
         } finally {
             consumer.close();
         }
-    }
-
-    public String getTimestamp(){
-        Date date = new Date();
-        SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        return formatter.format(date);
     }
 }
