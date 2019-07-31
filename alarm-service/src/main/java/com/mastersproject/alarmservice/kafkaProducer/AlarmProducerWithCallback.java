@@ -2,6 +2,7 @@ package com.mastersproject.alarmservice.kafkaProducer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mastersproject.alarmservice.configs.Config;
 import com.mastersproject.alarmservice.entity.Alarm;
 import com.mastersproject.alarmservice.entity.AlarmRepository;
 import org.apache.kafka.clients.producer.*;
@@ -24,10 +25,11 @@ public class AlarmProducerWithCallback {
     ObjectMapper mapper;
 
     private KafkaProducer<String, String> producer;
+    private String bootstrapServer = new Config().getIp();
 
     public AlarmProducerWithCallback(){
         Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "34.77.67.20:9092");
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         properties.setProperty(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, "true");
